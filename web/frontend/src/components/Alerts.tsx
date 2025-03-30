@@ -168,29 +168,6 @@ const Alerts: React.FC = () => {
     // Clean up the interval when component unmounts
     return () => clearInterval(intervalId);
   }, []); // Re-run if caretakerId changes
-  const initialAlerts: Alert[] = [
-    {
-      status: 'active',
-      type: 'fall',
-      description: 'Possible fall detected',
-      location: 'Living Room',
-      time: '3/30/2025, 2:19:17 PM'
-    },
-    {
-      status: 'resolved',
-      type: 'emergency',
-      description: 'Emergency button pressed',
-      location: 'Kitchen',
-      time: '3/30/2025, 1:19:17 PM'
-    },
-    {
-      status: 'pending',
-      type: 'check-in',
-      description: 'Daily check-in required',
-      location: 'Bedroom',
-      time: '3/30/2025, 12:19:17 PM'
-    }
-  ];
 
   const filteredAlerts = useMemo(() => {
     return alerts.filter(alert => {
@@ -525,18 +502,18 @@ const handleRespond = async (alertId: string) => {
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                     {alert.status === 'active' && (
-                        <Button
-                          onClick={() => handleRespond(alert.id)}
-                          sx={{
-                            color: '#DC2626',
-                            textTransform: 'none',
-                            minWidth: 'auto',
-                            p: 1
-                          }}
-                        >
-                          Respond
-                        </Button>
-                      )}
+                      <Button
+                        onClick={() => handleRespond(alert.id)}
+                        sx={{
+                          color: '#DC2626',
+                          textTransform: 'none',
+                          minWidth: 'auto',
+                          p: 1
+                        }}
+                      >
+                        Respond
+                      </Button>
+                    )}
                       <Button
                         sx={{
                           color: '#6B7280',
