@@ -3,7 +3,6 @@ const twilio = require("twilio"); // Or, for ESM: import twilio from "twilio";
 const mailer = require('../helpers/mailer.js')
 const router = express.Router()
 
-
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require('twilio')(accountSid, authToken);
