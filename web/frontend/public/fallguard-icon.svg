@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shield background -->
+  <path d="M16 2L4 7V14C4 20.732 9.268 27.464 16 30C22.732 27.464 28 20.732 28 14V7L16 2Z" fill="#6366F1"/>
+  
+  <!-- Inner shield accent -->
+  <path d="M16 4L6 8.2V14C6 19.672 10.328 25.344 16 27.5C21.672 25.344 26 19.672 26 14V8.2L16 4Z" fill="#818CF8"/>
+  
+  <!-- Heart symbol representing care -->
+  <path d="M16 12C14.5 10 12.5 10 11.5 11C10.5 12 10.5 14 12 15.5L16 19.5L20 15.5C21.5 14 21.5 12 20.5 11C19.5 10 17.5 10 16 12Z" fill="white"/>
+</svg> 
