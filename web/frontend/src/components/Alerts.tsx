@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -23,8 +23,10 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import axios from 'axios';
 
 interface Alert {
+  id: string; // Add this line
   status: 'active' | 'resolved' | 'pending';
   type: string;
   description: string;
@@ -108,6 +110,11 @@ const StatusChip: React.FC<{ status: string }> = ({ status }) => {
 
 const Alerts: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [caretakerId, setCaretakerId] = useState<string>(""); // You should set this based on logged-in user or props
   const [filters, setFilters] = useState<Filters>({
     status: {
       active: true,
@@ -124,7 +131,43 @@ const Alerts: React.FC = () => {
       end: ''
     }
   });
-
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        setLoading(true);
+        
+        // If you have a specific caretaker ID
+        let response = await axios.get(`http://localhost:3000/api/alerts/caretaker/67e92e8fc4c9bae373ce3093`);
+        
+        // Map backend data to match your frontend interface
+        const mappedAlerts: Alert[] = response.data.map((alert: any) => ({
+          id: alert._id, // Add this line to preserve the MongoDB ID
+          status: alert.isResolved ? 'resolved' : 'active',
+          type: alert.type || 'fall',
+          description: alert.description || 'Alert triggered',
+          location: alert.location,
+          time: new Date(alert.time).toLocaleString()
+        }));
+        
+        console.log('Fetched alerts:', mappedAlerts);
+        setAlerts(mappedAlerts);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching alerts:', err);
+        setError('Failed to load alerts. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchAlerts();
+    
+    // Set up a polling interval to refresh alerts every minute
+    const intervalId = setInterval(fetchAlerts, 60000);
+    
+    // Clean up the interval when component unmounts
+    return () => clearInterval(intervalId);
+  }, []); // Re-run if caretakerId changes
   const initialAlerts: Alert[] = [
     {
       status: 'active',
@@ -150,17 +193,17 @@ const Alerts: React.FC = () => {
   ];
 
   const filteredAlerts = useMemo(() => {
-    return initialAlerts.filter(alert => {
+    return alerts.filter(alert => {
       // Status filter
       if (!filters.status[alert.status as keyof typeof filters.status]) {
         return false;
       }
-
+  
       // Type filter
       if (!filters.type[alert.type as keyof typeof filters.type]) {
         return false;
       }
-
+  
       // Date range filter
       if (filters.dateRange.start || filters.dateRange.end) {
         const alertDate = new Date(alert.time);
@@ -171,11 +214,34 @@ const Alerts: React.FC = () => {
           return false;
         }
       }
-
+  
       return true;
     });
-  }, [filters, initialAlerts]);
-
+  }, [filters, alerts]);
+  // Add this function in the Alerts component
+const handleRespond = async (alertId: string) => {
+  try {
+    // Call the API to update the alert
+    const response = await axios.put(`http://localhost:3000/api/alerts/${alertId}`, {
+      isResolved: true
+    });
+    
+    // Update the local state
+    setAlerts(prevAlerts => 
+      prevAlerts.map(alert => 
+        alert.id === alertId 
+          ? { ...alert, status: 'resolved' } 
+          : alert
+      )
+    );
+    
+    // Optional: Show success message
+    console.log('Alert marked as resolved', response.data);
+  } catch (error) {
+    console.error('Error resolving alert:', error);
+    // Optional: Show error message to user
+  }
+};
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -424,6 +490,17 @@ const Alerts: React.FC = () => {
             borderRadius: '8px'
           }}
         >
+          {loading && (
+            <Box sx={{ textAlign: 'center', my: 4 }}>
+              <Typography>Loading alerts...</Typography>
+            </Box>
+          )}
+
+          {!loading && !error && filteredAlerts.length === 0 && (
+            <Box sx={{ textAlign: 'center', my: 4 }}>
+              <Typography>No alerts found matching the current filters.</Typography>
+            </Box>
+          )}
           <Table>
             <TableHead>
               <TableRow>
@@ -447,8 +524,9 @@ const Alerts: React.FC = () => {
                   <TableCell sx={{ color: '#111827' }}>{alert.time}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      {alert.status === 'active' && (
+                    {alert.status === 'active' && (
                         <Button
+                          onClick={() => handleRespond(alert.id)}
                           sx={{
                             color: '#DC2626',
                             textTransform: 'none',

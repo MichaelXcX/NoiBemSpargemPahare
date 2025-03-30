@@ -4,10 +4,11 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const {Elder} = require('./models/elder.model.js')
 const {Caretaker} = require('./models/caretaker.model.js')
+const {Alert} = require('./models/alert.model.js')
 const notifyRoute = require('./routes/notifiers.route.js')
 const eldersRoute = require('./routes/elders.route.js')
 const caretakersRoute = require('./routes/caretaker.route.js')
-const Alert = require('./models/Alert')
+const alertRoute = require('./routes/alert.route.js')
 const app = express()
 const port = 3000
 
@@ -17,6 +18,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use('/api/notifiers', notifyRoute)
 app.use('/api/elders', eldersRoute)
 app.use('/api/caretakers', caretakersRoute)
+app.use('/api/alerts', alertRoute)
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://MeHigh:MXmskfMqgpCwJ1oC@cluster.60g9n.mongodb.net/hack_it')
     .then(() => {
