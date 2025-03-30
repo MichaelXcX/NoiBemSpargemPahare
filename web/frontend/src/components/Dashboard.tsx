@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Box, Card, CardContent, Typography, Button, Container } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
 import PersonIcon from '@mui/icons-material/Person';
 import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
-import axios from 'axios';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -119,54 +118,8 @@ const RecentAlert: React.FC = () => (
 );
 
 const Dashboard: React.FC = () => {
-    const [elders, setElders] = useState<any[]>([]);
-    const [eldersNum, setEldersNum] = useState<number>(0);
-    const [caretaker, setCaretaker] = useState<any>({}); // Replace with actual caretaker ID
-    useEffect(() => {
-      const fetchElders = async () => {
-        try {
-          await axios.get('http://localhost:3000/api/elders/67e92e8fc4c9bae373ce3093')
-          .then((res) => {
-            console.log(res.data);
-            setElders(res.data);
-            setEldersNum(res.data.length);
-          }); // Replace with actual caretaker ID
-        } catch (error) {
-          console.error('Error fetching elders:', error);
-        }
-      };
-      const fetchCaretaker = async () => {
-        try {
-          await axios.get('http://localhost:3000/api/caretakers/caretaker1@gmail.com')
-          .then((res) => {
-            console.log(res.data);
-            setCaretaker(res.data);
-          }); // Replace with actual caretaker ID
-        } catch (error) {
-          console.error('Error fetching caretaker:', error);
-        }
-      }
-      fetchElders();
-      fetchCaretaker();
-    }, [])
   return (
     <Container maxWidth="xl">
-      {/* <!-- Header --> */}
-      {/* Hello <caretaker name> */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: 4 
-      }}>
-        <Typography sx={{ 
-          fontSize: '1.875rem',
-          fontWeight: 600,
-          color: '#111827'
-        }}>
-          Hello, {caretaker?.name}
-        </Typography>
-      </Box>
       <Box sx={{ p: 3 }}>
         <Typography sx={{ 
           fontSize: '1.875rem',
@@ -187,13 +140,13 @@ const Dashboard: React.FC = () => {
           <StatCard
             icon={<PersonIcon sx={{ fontSize: 32 }} />}
             title="Monitored Users"
-            value={eldersNum}
+            value={1}
             color="#4F46E5"
           />
           <StatCard
             icon={<PhoneAndroidIcon sx={{ fontSize: 32 }} />}
             title="Active Devices"
-            value={eldersNum}
+            value={1}
             color="#059669"
           />
         </Box>

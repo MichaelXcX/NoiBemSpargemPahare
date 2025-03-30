@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -38,6 +38,21 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
   const [errors, setErrors] = useState<{ email?: string; phone?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Format phone number when formData changes
+  useEffect(() => {
+    if (formData.phone) {
+      const formatted = formatPhoneNumber(formData.phone);
+      if (formatted !== formData.phone) {
+        onInputChange({
+          target: {
+            name: 'phone',
+            value: formatted
+          }
+        } as React.ChangeEvent<HTMLInputElement>);
+      }
+    }
+  }, [formData.phone]);
+
   const validateForm = () => {
     const newErrors: { email?: string; phone?: string } = {};
     
@@ -70,7 +85,9 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
     
     // If the number doesn't start with +40, add it
     if (!numbers.startsWith('+40')) {
-      return '+40 ' + numbers.replace(/^\+?0?/, '');
+      // Remove any leading zeros and add +40
+      const cleanNumber = numbers.replace(/^0+/, '');
+      return '+40 ' + cleanNumber;
     }
     
     // Format the rest of the number
@@ -123,6 +140,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
             error={!!errors.email}
             helperText={errors.email}
             placeholder="Enter your email address"
+            autoComplete="email"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -138,6 +156,15 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
                 },
                 '&:hover fieldset': {
                   borderColor: '#D1D5DB'
+                },
+                '& input': {
+                  backgroundColor: 'transparent !important',
+                  color: '#111827',
+                  '&:-webkit-autofill': {
+                    WebkitBoxShadow: '0 0 0 1000px white inset',
+                    WebkitTextFillColor: '#111827',
+                    caretColor: '#111827'
+                  }
                 }
               }
             }}
@@ -152,6 +179,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
             error={!!errors.phone}
             helperText={errors.phone}
             placeholder="+40 XXX XXX XXX"
+            autoComplete="tel"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -167,6 +195,15 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
                 },
                 '&:hover fieldset': {
                   borderColor: '#D1D5DB'
+                },
+                '& input': {
+                  backgroundColor: 'transparent !important',
+                  color: '#111827',
+                  '&:-webkit-autofill': {
+                    WebkitBoxShadow: '0 0 0 1000px white inset',
+                    WebkitTextFillColor: '#111827',
+                    caretColor: '#111827'
+                  }
                 }
               }
             }}
@@ -209,4 +246,4 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
   );
 };
 
-export { AuthDialog, type AuthFormData }; 
+export { AuthDialog }; 

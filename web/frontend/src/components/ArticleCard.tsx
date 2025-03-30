@@ -3,22 +3,29 @@ import {
   Card,
   CardContent,
   CardMedia,
-  CardActions,
   Box,
   Typography,
   Button,
-  Link as MuiLink,
+  Link,
   Skeleton
 } from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Article } from '../data/articles';
 
 interface ArticleCardProps {
   article: Article;
 }
 
-export const ArticleCard: React.FC<ArticleCardProps> = ({ article }) => {
+const ArticleCard: React.FC<ArticleCardProps> = ({ article }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Pre-load the image
+  React.useEffect(() => {
+    const img = new Image();
+    img.src = article.image;
+    img.onload = () => setImageLoaded(true);
+    img.onerror = () => setImageError(true);
+  }, [article.image]);
 
   return (
     <Card
@@ -27,14 +34,17 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article }) => {
         display: 'flex',
         flexDirection: 'column',
         borderRadius: '12px',
-        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.05)',
+        overflow: 'hidden',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
         '&:hover': {
-          boxShadow: '0px 8px 12px rgba(0, 0, 0, 0.1)'
+          transform: 'translateY(-4px)',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
         }
       }}
     >
-      <Box sx={{ position: 'relative', paddingTop: '56.25%' }}>
-        {!imageLoaded && (
+      <Box sx={{ position: 'relative', paddingTop: '56.25%' /* 16:9 aspect ratio */ }}>
+        {!imageLoaded && !imageError && (
           <Skeleton 
             variant="rectangular" 
             sx={{ 
@@ -43,113 +53,98 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article }) => {
               left: 0,
               right: 0,
               bottom: 0,
-              bgcolor: '#E5E7EB'
-            }} 
+              bgcolor: '#F3F4F6'
+            }}
           />
         )}
         <CardMedia
           component="img"
           image={article.image}
           alt={article.title}
-          sx={{ 
+          sx={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            display: imageLoaded ? 'block' : 'none'
+            opacity: imageLoaded ? 1 : 0,
+            transition: 'opacity 0.3s ease-in-out'
           }}
-          onLoad={() => setImageLoaded(true)}
-          loading="lazy"
         />
       </Box>
-      <CardContent sx={{ 
-        flexGrow: 1, 
-        p: 3,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%'
-      }}>
+      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
         <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: '#6366F1',
+                bgcolor: '#EEF2FF',
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '16px',
+                fontWeight: 500
+              }}
+            >
+              {article.category}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#6B7280' }}>
+              {article.date}
+            </Typography>
+          </Box>
           <Typography
+            variant="h6"
             sx={{
-              color: '#6366F1',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              mb: 1
+              fontWeight: 600,
+              color: '#111827',
+              mb: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
             }}
           >
-            {article.category}
+            {article.title}
           </Typography>
           <Typography
+            variant="body2"
             sx={{
-              color: '#374151',
-              fontSize: '0.875rem'
+              color: '#6B7280',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical'
             }}
           >
-            {article.date}
+            {article.description}
           </Typography>
         </Box>
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 600,
-            color: '#111827',
-            mb: 2,
-            fontSize: '1.25rem',
-            minHeight: '3rem',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
-          }}
-        >
-          {article.title}
-        </Typography>
-        <Typography
-          sx={{
-            color: '#6B7280',
-            fontSize: '1rem',
-            lineHeight: 1.5,
-            mb: 2,
-            flexGrow: 1,
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
-          }}
-        >
-          {article.description}
-        </Typography>
-      </CardContent>
-      <CardActions sx={{ 
-        p: 3, 
-        pt: 0,
-        borderTop: '1px solid #E5E7EB'
-      }}>
-        <MuiLink
-          href={article.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          underline="none"
-          sx={{ ml: 'auto' }}
-        >
+        <Box sx={{ mt: 'auto' }}>
           <Button
-            endIcon={<OpenInNewIcon />}
+            component={Link}
+            href={article.link}
+            target="_blank"
+            rel="noopener noreferrer"
             sx={{
               color: '#6366F1',
               textTransform: 'none',
               fontWeight: 500,
+              p: 0,
               '&:hover': {
-                bgcolor: 'rgba(99, 102, 241, 0.04)'
+                bgcolor: 'transparent',
+                color: '#4F46E5'
               }
             }}
           >
-            Read more
+            Read More →
           </Button>
-        </MuiLink>
-      </CardActions>
+        </Box>
+      </CardContent>
     </Card>
   );
-}; 
+};
+
+export default ArticleCard; 
