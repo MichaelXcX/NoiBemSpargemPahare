@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import Alerts from './components/Alerts';
 import Settings from './components/Settings';
 import Landing from './components/Landing';
+import AuthProvider from './contexts/AuthContext';
 
 const theme = createTheme({
   palette: {
@@ -42,47 +43,49 @@ const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) =>
 const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute
-                element={
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                }
-              />
-            }
-          />
-          <Route
-            path="/alerts"
-            element={
-              <PrivateRoute
-                element={
-                  <Layout>
-                    <Alerts />
-                  </Layout>
-                }
-              />
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <PrivateRoute
-                element={
-                  <Layout>
-                    <Settings />
-                  </Layout>
-                }
-              />
-            }
-          />
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute
+                  element={
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  }
+                />
+              }
+            />
+            <Route
+              path="/alerts"
+              element={
+                <PrivateRoute
+                  element={
+                    <Layout>
+                      <Alerts />
+                    </Layout>
+                  }
+                />
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PrivateRoute
+                  element={
+                    <Layout>
+                      <Settings />
+                    </Layout>
+                  }
+                />
+              }
+            />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
 };

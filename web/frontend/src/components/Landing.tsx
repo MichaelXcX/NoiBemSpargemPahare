@@ -1,238 +1,269 @@
-import React, { lazy, Suspense } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Container,
   Typography,
   Button,
-  Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  CardActions,
-  IconButton,
-  Link as MuiLink,
-  Skeleton
+  Fade,
+  Stack
 } from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { ArticleCard } from './ArticleCard';
+import { articles } from '../data/articles';
 import Navbar from './Navbar';
-
-const articles = [
-  {
-    title: "Understanding Fall Prevention for Elderly: A Comprehensive Guide",
-    description: "Learn about the latest techniques and technologies helping seniors stay safe at home.",
-    image: "https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?auto=format&w=800&q=75",
-    date: "Mar 15, 2024",
-    category: "Guides",
-    link: "https://www.nia.nih.gov/health/prevent-falls-and-fractures"
-  },
-  {
-    title: "How Technology is Revolutionizing Elder Care",
-    description: "Discover how AI and smart devices are making homes safer for our elderly loved ones.",
-    image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&w=800&q=75",
-    date: "Jan 30, 2024",
-    category: "Insights",
-    link: "https://www.who.int/news-room/fact-sheets/detail/falls"
-  },
-  {
-    title: "The Importance of Quick Response in Fall Incidents",
-    description: "Why the first hour after a fall is crucial and how to prepare for emergencies.",
-    image: "https://images.unsplash.com/photo-1576765608866-5b51046452be?auto=format&w=800&q=75",
-    date: "Jan 29, 2024",
-    category: "Safety",
-    link: "https://www.cdc.gov/falls/index.html"
-  }
-];
-
-const ArticleCard: React.FC<{article: typeof articles[0]}> = ({ article }) => {
-  const [imageLoaded, setImageLoaded] = React.useState(false);
-
-  return (
-    <Card
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: '12px',
-        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.05)',
-        '&:hover': {
-          boxShadow: '0px 8px 12px rgba(0, 0, 0, 0.1)'
-        }
-      }}
-    >
-      <Box sx={{ position: 'relative', paddingTop: '56.25%' }}>
-        {!imageLoaded && (
-          <Skeleton 
-            variant="rectangular" 
-            sx={{ 
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              bgcolor: '#E5E7EB'
-            }} 
-          />
-        )}
-        <CardMedia
-          component="img"
-          image={article.image}
-          alt={article.title}
-          sx={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            display: imageLoaded ? 'block' : 'none'
-          }}
-          onLoad={() => setImageLoaded(true)}
-          loading="lazy"
-        />
-      </Box>
-      <CardContent sx={{ 
-        flexGrow: 1, 
-        p: 3,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%'
-      }}>
-        <Box sx={{ mb: 2 }}>
-          <Typography
-            sx={{
-              color: '#6366F1',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              mb: 1
-            }}
-          >
-            {article.category}
-          </Typography>
-          <Typography
-            sx={{
-              color: '#374151',
-              fontSize: '0.875rem'
-            }}
-          >
-            {article.date}
-          </Typography>
-        </Box>
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 600,
-            color: '#111827',
-            mb: 2,
-            fontSize: '1.25rem',
-            minHeight: '3rem',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
-          }}
-        >
-          {article.title}
-        </Typography>
-        <Typography
-          sx={{
-            color: '#6B7280',
-            fontSize: '1rem',
-            lineHeight: 1.5,
-            mb: 2,
-            flexGrow: 1,
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
-          }}
-        >
-          {article.description}
-        </Typography>
-      </CardContent>
-      <CardActions sx={{ 
-        p: 3, 
-        pt: 0,
-        borderTop: '1px solid #E5E7EB'
-      }}>
-        <MuiLink
-          href={article.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          underline="none"
-          sx={{ ml: 'auto' }}
-        >
-          <Button
-            endIcon={<OpenInNewIcon />}
-            sx={{
-              color: '#6366F1',
-              textTransform: 'none',
-              fontWeight: 500,
-              '&:hover': {
-                bgcolor: 'rgba(99, 102, 241, 0.04)'
-              }
-            }}
-          >
-            Read more
-          </Button>
-        </MuiLink>
-      </CardActions>
-    </Card>
-  );
-};
+import { AuthDialog, AuthFormData } from './AuthDialog';
 
 const Landing: React.FC = () => {
+  const { isAuthenticated, login } = useAuth();
+  const navigate = useNavigate();
+  const [scrollCount, setScrollCount] = useState(0);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const articlesRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [formData, setFormData] = useState<AuthFormData>({
+    email: '',
+    phone: ''
+  });
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (isTransitioning) return;
+
+      // Only handle downward scrolls when in the hero section
+      if (e.deltaY > 0 && window.scrollY < window.innerHeight) {
+        e.preventDefault();
+        setScrollCount(prev => {
+          const newCount = prev + 1;
+          
+          // After 3 scrolls, transition to articles section
+          if (newCount >= 3) {
+            setIsTransitioning(true);
+            setShowScrollIndicator(false);
+            articlesRef.current?.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            });
+            
+            // Reset after transition
+            setTimeout(() => {
+              setIsTransitioning(false);
+              setScrollCount(0);
+            }, 1000);
+            
+            return 0;
+          }
+          return newCount;
+        });
+      }
+    };
+
+    // Handle scroll position on page load and scroll
+    const handleScroll = () => {
+      if (window.scrollY > window.innerHeight / 2) {
+        setShowScrollIndicator(false);
+      } else if (!isTransitioning) {
+        setShowScrollIndicator(true);
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isTransitioning]);
+
+  const handleScrollClick = () => {
+    setIsTransitioning(true);
+    setShowScrollIndicator(false);
+    articlesRef.current?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+    
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setScrollCount(0);
+    }, 1000);
+  };
+
+  const handleGetStarted = () => {
+    login();
+    navigate('/dashboard');
+  };
+
+  const handleLogin = () => {
+    console.log('Login:', formData);
+    setIsLoginOpen(false);
+    navigate('/dashboard');
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#FFFFFF' }}>
       <Navbar />
       
       {/* Hero Section */}
-      <Container maxWidth="xl" sx={{ mt: 8, mb: 12 }}>
-        <Box sx={{ textAlign: 'center', maxWidth: '800px', mx: 'auto', px: 3 }}>
-          <Typography
-            variant="h1"
+      <Box 
+        ref={heroRef}
+        sx={{ 
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative'
+        }}
+      >
+        <Container maxWidth="xl" sx={{ 
+          mt: 8,
+          mb: 12,
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          <Box sx={{ textAlign: 'center', maxWidth: '800px', mx: 'auto', px: 3 }}>
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: { xs: '2.5rem', md: '3.5rem' },
+                fontWeight: 700,
+                color: '#111827',
+                mb: 3
+              }}
+            >
+              Find peace of mind with FallGuard
+            </Typography>
+            <Typography
+              variant="h2"
+              sx={{
+                fontSize: { xs: '1.25rem', md: '1.5rem' },
+                color: '#6B7280',
+                mb: 4,
+                lineHeight: 1.5
+              }}
+            >
+              Power your elderly care with intelligent fall detection and instant notifications.
+              The most reliable platform for ensuring the safety of your loved ones.
+            </Typography>
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={2} 
+              justifyContent="center"
+              alignItems="center"
+            >
+              {!isAuthenticated && (
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() => setIsLoginOpen(true)}
+                  sx={{
+                    bgcolor: '#6366F1',
+                    textTransform: 'none',
+                    px: 6,
+                    py: 2,
+                    fontSize: '1.125rem',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      bgcolor: '#4F46E5'
+                    }
+                  }}
+                >
+                  Get started
+                </Button>
+              )}
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={handleScrollClick}
+                sx={{
+                  borderColor: '#6366F1',
+                  color: '#6366F1',
+                  textTransform: 'none',
+                  px: 6,
+                  py: 2,
+                  fontSize: '1.125rem',
+                  borderRadius: '8px',
+                  '&:hover': {
+                    borderColor: '#4F46E5',
+                    bgcolor: 'rgba(99, 102, 241, 0.04)'
+                  }
+                }}
+              >
+                Read more about us
+              </Button>
+            </Stack>
+          </Box>
+        </Container>
+
+        {/* Scroll Indicator */}
+        <Fade in={showScrollIndicator}>
+          <Box
+            onClick={handleScrollClick}
             sx={{
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-              fontWeight: 700,
-              color: '#111827',
-              mb: 3
+              position: 'absolute',
+              bottom: 40,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1,
+              animation: 'bounce 2s infinite',
+              '@keyframes bounce': {
+                '0%, 20%, 50%, 80%, 100%': {
+                  transform: 'translateY(0) translateX(-50%)',
+                },
+                '40%': {
+                  transform: 'translateY(-20px) translateX(-50%)',
+                },
+                '60%': {
+                  transform: 'translateY(-10px) translateX(-50%)',
+                },
+              },
             }}
           >
-            Find peace of mind with FallGuard
-          </Typography>
-          <Typography
-            variant="h2"
-            sx={{
-              fontSize: { xs: '1.25rem', md: '1.5rem' },
-              color: '#6B7280',
-              mb: 4,
-              lineHeight: 1.5
-            }}
-          >
-            Power your elderly care with intelligent fall detection and instant notifications.
-            The most reliable platform for ensuring the safety of your loved ones.
-          </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            sx={{
-              bgcolor: '#6366F1',
-              textTransform: 'none',
-              px: 6,
-              py: 2,
-              fontSize: '1.125rem',
-              borderRadius: '8px',
-              '&:hover': {
-                bgcolor: '#4F46E5'
-              }
-            }}
-          >
-            Get started for free
-          </Button>
-        </Box>
-      </Container>
+            <Typography
+              sx={{
+                color: '#6B7280',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
+              Scroll down
+            </Typography>
+            <KeyboardArrowDownIcon 
+              sx={{ 
+                color: '#6366F1',
+                fontSize: '2rem'
+              }} 
+            />
+          </Box>
+        </Fade>
+      </Box>
 
       {/* Articles Section */}
-      <Box sx={{ bgcolor: '#F9FAFB', py: 12 }}>
+      <Box 
+        ref={articlesRef}
+        sx={{ 
+          minHeight: '100vh',
+          bgcolor: '#F9FAFB', 
+          py: 12,
+          display: 'flex',
+          alignItems: 'center'
+        }}
+      >
         <Container maxWidth="xl">
           <Box sx={{ mb: 6 }}>
             <Typography
@@ -257,24 +288,41 @@ const Landing: React.FC = () => {
             </Typography>
           </Box>
 
-          <Grid container spacing={4} justifyContent="center">
+          <Box 
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)'
+              },
+              gap: 4,
+              justifyItems: 'center'
+            }}
+          >
             {articles.map((article, index) => (
-              <Grid 
-                item 
-                xs={12} 
-                sm={6}
-                md={4} 
+              <Box 
                 key={index}
                 sx={{
-                  maxWidth: '400px'
+                  maxWidth: '400px',
+                  width: '100%'
                 }}
               >
                 <ArticleCard article={article} />
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
+
+      <AuthDialog
+        open={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        title="Log in to FallGuard"
+        onSubmit={handleLogin}
+        formData={formData}
+        onInputChange={handleInputChange}
+      />
     </Box>
   );
 };

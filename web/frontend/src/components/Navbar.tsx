@@ -5,11 +5,6 @@ import {
   Toolbar,
   Button,
   Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
-  DialogActions,
   Typography,
   Container,
   Divider
@@ -18,15 +13,13 @@ import HomeIcon from '@mui/icons-material/Home';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
-
-interface AuthFormData {
-  email: string;
-  phone: string;
-}
+import { useAuth } from '../contexts/AuthContext';
+import { AuthDialog, AuthFormData } from './AuthDialog';
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, login, logout } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [formData, setFormData] = useState<AuthFormData>({
@@ -34,24 +27,22 @@ const Navbar: React.FC = () => {
     phone: ''
   });
 
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-
   const handleLogin = () => {
     console.log('Login:', formData);
-    localStorage.setItem('isAuthenticated', 'true');
+    login();
     setIsLoginOpen(false);
     navigate('/dashboard');
   };
 
   const handleRegister = () => {
     console.log('Register:', formData);
-    localStorage.setItem('isAuthenticated', 'true');
+    login();
     setIsRegisterOpen(false);
     navigate('/dashboard');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
+    logout();
     navigate('/');
   };
 
@@ -61,91 +52,6 @@ const Navbar: React.FC = () => {
       [e.target.name]: e.target.value
     });
   };
-
-  const AuthDialog: React.FC<{
-    open: boolean;
-    onClose: () => void;
-    title: string;
-    onSubmit: () => void;
-  }> = ({ open, onClose, title, onSubmit }) => (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Typography variant="h5" sx={{ fontWeight: 600, color: '#111827' }}>
-          {title}
-        </Typography>
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            name="email"
-            label="Email"
-            type="email"
-            fullWidth
-            value={formData.email}
-            onChange={handleInputChange}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
-                '& fieldset': {
-                  borderColor: '#E5E7EB'
-                },
-                '&:hover fieldset': {
-                  borderColor: '#D1D5DB'
-                }
-              }
-            }}
-          />
-          <TextField
-            name="phone"
-            label="Phone Number"
-            type="tel"
-            fullWidth
-            value={formData.phone}
-            onChange={handleInputChange}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
-                '& fieldset': {
-                  borderColor: '#E5E7EB'
-                },
-                '&:hover fieldset': {
-                  borderColor: '#D1D5DB'
-                }
-              }
-            }}
-          />
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ p: 3 }}>
-        <Button
-          onClick={onClose}
-          sx={{
-            color: '#6B7280',
-            textTransform: 'none',
-            '&:hover': {
-              bgcolor: 'transparent',
-              color: '#374151'
-            }
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={onSubmit}
-          variant="contained"
-          sx={{
-            bgcolor: '#6366F1',
-            textTransform: 'none',
-            '&:hover': {
-              bgcolor: '#4F46E5'
-            }
-          }}
-        >
-          {title}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
 
   return (
     <AppBar 
@@ -276,6 +182,8 @@ const Navbar: React.FC = () => {
             onClose={() => setIsLoginOpen(false)}
             title="Log in to FallGuard"
             onSubmit={handleLogin}
+            formData={formData}
+            onInputChange={handleInputChange}
           />
 
           <AuthDialog
@@ -283,6 +191,8 @@ const Navbar: React.FC = () => {
             onClose={() => setIsRegisterOpen(false)}
             title="Create your FallGuard account"
             onSubmit={handleRegister}
+            formData={formData}
+            onInputChange={handleInputChange}
           />
         </Toolbar>
       </Container>
