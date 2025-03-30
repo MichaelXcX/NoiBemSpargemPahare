@@ -8,53 +8,70 @@ import {
   Typography,
   Button,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Alert
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 export interface AuthFormData {
   email: string;
   phone: string;
 }
 
-interface AuthDialogProps {
+export interface AuthDialogProps {
   open: boolean;
   onClose: () => void;
   title: string;
-  onSubmit: () => void;
   formData: AuthFormData;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSubmit: () => void;
 }
+
 
 const AuthDialog: React.FC<AuthDialogProps> = ({
   open,
   onClose,
-  title,
-  onSubmit,
-  formData,
-  onInputChange
+  title
 }) => {
-  const [errors, setErrors] = useState<{ email?: string; phone?: string }>({});
+  const { setIsAuthenticated, setUser } = useAuth();
+  const [formData, setFormData] = useState<AuthFormData>({
+    email: '',
+    phone: ''
+  });
+  const [errors, setErrors] = useState<{ email?: string; phone?: string; }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+    
+    // Clear login error when user makes changes
+    if (loginError) {
+      setLoginError(null);
+    }
+  };
 
   // Format phone number when formData changes
   useEffect(() => {
     if (formData.phone) {
       const formatted = formatPhoneNumber(formData.phone);
       if (formatted !== formData.phone) {
-        onInputChange({
-          target: {
-            name: 'phone',
-            value: formatted
-          }
-        } as React.ChangeEvent<HTMLInputElement>);
+        setFormData(prev => ({ ...prev, phone: formatted }));
       }
     }
   }, [formData.phone]);
 
   const validateForm = () => {
-    const newErrors: { email?: string; phone?: string } = {};
+    const newErrors: { email?: string; phone?: string; } = {};
     
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -62,9 +79,8 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
       newErrors.email = 'Please enter a valid email';
     }
 
-    if (!formData.phone) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^\+40\s?[1-9]\d{1,9}$/.test(formData.phone.replace(/\s/g, ''))) {
+    // Phone validation is optional for login
+    if (formData.phone && !/^\+40\s?[1-9]\d{1,9}$/.test(formData.phone.replace(/\s/g, ''))) {
       newErrors.phone = 'Please enter a valid Romanian phone number';
     }
 
@@ -72,10 +88,62 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validateForm() && !isSubmitting) {
-      setIsSubmitting(true);
-      onSubmit();
+  const handleSubmit = async () => {
+    if (!validateForm() || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Login using just the email as per the backend route
+      const loginResponse = await axios.post('http://localhost:3000/api/caretakers/login', {
+        email: formData.email
+      });
+      
+      if (loginResponse.status === 200) {
+        const userData = loginResponse.data;
+        
+        try {
+          // Get additional details about the caretaker
+          const detailsResponse = await axios.get(`http://localhost:3000/api/caretakers/${formData.email}`);
+          
+          // Combine data from both responses
+          const fullUserData = {
+            ...userData,
+            assignees: detailsResponse.data.assignees || [],
+            location: detailsResponse.data.location,
+            age: detailsResponse.data.age
+          };
+          
+          // Update auth context
+          setUser(fullUserData);
+          setIsAuthenticated(true);
+          
+          // Store user data in localStorage for session persistence
+          localStorage.setItem('user', JSON.stringify(fullUserData));
+          
+          onClose();
+          // Reset form
+          setFormData({
+            email: '',
+            phone: ''
+          });
+        } catch (detailsError) {
+          console.error('Error fetching caretaker details:', detailsError);
+          
+          // Still login with basic data if details fetch fails
+          setUser(userData);
+          setIsAuthenticated(true);
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          onClose();
+        }
+      } else {
+        setLoginError('Invalid credentials. Please try again.');
+      }
+    } catch (error) {
+      setLoginError('An error occurred during login. Please try again.');
+      console.error('Login error:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -94,18 +162,16 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
     const digits = numbers.slice(3); // Remove +40
     if (digits.length <= 3) return '+40 ' + digits;
     if (digits.length <= 6) return '+40 ' + digits.slice(0, 3) + ' ' + digits.slice(3);
-    if (digits.length <= 9) return '+40 ' + digits.slice(0, 3) + ' ' + digits.slice(3, 6) + ' ' + digits.slice(6);
     return '+40 ' + digits.slice(0, 3) + ' ' + digits.slice(3, 6) + ' ' + digits.slice(6, 9);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    onInputChange({
+    handleInputChange({
       ...e,
       target: {
         ...e.target,
         name: 'phone',
-        value: formatted
+        value: formatPhoneNumber(e.target.value)
       }
     });
   };
@@ -130,13 +196,19 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
       </DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {loginError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {loginError}
+            </Alert>
+          )}
+          
           <TextField
             name="email"
             label="Email"
             type="email"
             fullWidth
             value={formData.email}
-            onChange={onInputChange}
+            onChange={handleInputChange}
             error={!!errors.email}
             helperText={errors.email}
             placeholder="Enter your email address"
@@ -169,9 +241,10 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
               }
             }}
           />
+          
           <TextField
             name="phone"
-            label="Phone Number"
+            label="Phone Number (Optional)"
             type="tel"
             fullWidth
             value={formData.phone}
@@ -246,4 +319,4 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
   );
 };
 
-export { AuthDialog }; 
+export { AuthDialog };

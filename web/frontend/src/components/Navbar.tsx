@@ -16,10 +16,11 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthDialog, AuthFormData } from './AuthDialog';
 
+
 const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, login, logout } = useAuth();
+  const { isAuthenticated, setIsAuthenticated, login, logout } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [formData, setFormData] = useState<AuthFormData>({
@@ -28,19 +29,20 @@ const Navbar: React.FC = () => {
   });
 
   const handleLogin = () => {
-    console.log('Login:', formData);
-    login();
     setIsLoginOpen(false);
+    setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
     navigate('/dashboard');
   };
-
+  
+  // Update the handleRegister function
   const handleRegister = () => {
     console.log('Register:', formData);
-    login();
+    setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
     setIsRegisterOpen(false);
     navigate('/dashboard');
   };
-
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -52,7 +54,7 @@ const Navbar: React.FC = () => {
       [e.target.name]: e.target.value
     });
   };
-
+  
   return (
     <AppBar 
       position="static" 
@@ -200,4 +202,4 @@ const Navbar: React.FC = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

@@ -35,6 +35,17 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Get alert by caretaker ID
+router.get('/caretaker/:id', async (req, res) => {
+    try {
+        const {id} = req.params;
+        const alerts = await Alert.find({careTaker: id});
+        res.status(200).json(alerts);
+    } catch (error) {
+        res.status(500).json({message: 'Error getting alerts by caretaker ID', error: error.message});
+    }
+});
+
 // Update an alert by ID
 router.put('/:id', async (req, res) => {
     try {

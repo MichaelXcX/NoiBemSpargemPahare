@@ -25,12 +25,14 @@ const AlertSchema = new Mongoose.Schema({
         type: String,
         required: false,
     },
-    
+    type: {
+        type: String,
+        required: true,
+    },
 });
 
 const Alert = Mongoose.model('Alert', AlertSchema);
-
-module.exports = {Alert};
+module.exports = { Alert };
     
 
     

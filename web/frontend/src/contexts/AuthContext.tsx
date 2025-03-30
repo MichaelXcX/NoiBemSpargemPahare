@@ -1,39 +1,53 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: 'caretaker';
+  assignees?: string[];
+  location?: string;
+  age?: number;
+}
 
 export interface AuthContextType {
   isAuthenticated: boolean;
+  user: User | null;
   setIsAuthenticated: (value: boolean) => void;
+  setUser: (user: User | null) => void;
   login: () => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    // Check if user is logged in from localStorage
-    return localStorage.getItem('isAuthenticated') === 'true';
-  });
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
 
-  const login = () => {
-    setIsAuthenticated(true);
-    localStorage.setItem('isAuthenticated', 'true');
-  };
+  // Check for existing session on startup
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const logout = () => {
+    setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('user');
   };
 
-  const value: AuthContextType = {
-    isAuthenticated,
-    setIsAuthenticated,
-    login,
-    logout
+  const login = () => {
+    // Implement your login logic here
+    setIsAuthenticated(true);
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ isAuthenticated, user, setIsAuthenticated, setUser, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -47,4 +61,4 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-export default AuthProvider; 
+export default AuthProvider;
