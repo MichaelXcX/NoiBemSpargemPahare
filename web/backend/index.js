@@ -7,6 +7,7 @@ const {Caretaker} = require('./models/caretaker.model.js')
 const notifyRoute = require('./routes/notifiers.route.js')
 const eldersRoute = require('./routes/elders.route.js')
 const caretakersRoute = require('./routes/caretaker.route.js')
+const Alert = require('./models/Alert')
 const app = express()
 const port = 3000
 
@@ -56,15 +57,15 @@ const seeder = async () => {
         const elders = [
             new Elder({
                 name: "Elder 1",
-                caretakerId: caretaker._id, // Changed from caretaker to caretakerId
+                caretakerId: caretaker._id,
                 phone: "+40112345678",
-                email: "elder1@example.com", // Added email
+                email: "elder1@example.com",
             }),
             new Elder({
                 name: "Elder 2", 
-                caretakerId: caretaker._id, // Changed from caretaker to caretakerId
+                caretakerId: caretaker._id,
                 phone: "+40112345679",
-                email: "elder2@example.com", // Added email
+                email: "elder2@example.com",
             }),
         ];
 
@@ -77,9 +78,40 @@ const seeder = async () => {
         // Save the updated caretaker
         await caretaker.save();
 
+        // Create alerts for each elder
+        const alerts = [];
+        const alertTypes = ['Fall Detection', 'Emergency', 'Check-in'];
+        const alertStatuses = ['Active', 'Resolved', 'Pending'];
+        const locations = ['Living Room', 'Bedroom', 'Kitchen', 'Bathroom'];
+        
+        // Generate multiple alerts for each elder
+        for (const elder of savedElders) {
+            // Create alerts with different dates over the past week
+            for (let i = 0; i < 5; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - Math.floor(Math.random() * 7)); // Random date within last week
+                
+                alerts.push(new Alert({
+                    elderId: elder._id,
+                    caretakerId: caretaker._id,
+                    type: alertTypes[Math.floor(Math.random() * alertTypes.length)],
+                    status: alertStatuses[Math.floor(Math.random() * alertStatuses.length)],
+                    description: `Alert triggered for ${elder.name} in the ${locations[Math.floor(Math.random() * locations.length)]}`,
+                    location: locations[Math.floor(Math.random() * locations.length)],
+                    timestamp: date,
+                    resolved: Math.random() > 0.5, // 50% chance of being resolved
+                    resolvedAt: Math.random() > 0.5 ? new Date() : null,
+                }));
+            }
+        }
+
+        // Save all alerts concurrently
+        const savedAlerts = await Promise.all(alerts.map(alert => alert.save()));
+
         console.log("Database seeded successfully!");
         console.log("Caretaker:", caretaker);
         console.log("Elders:", savedElders);
+        console.log("Alerts:", savedAlerts);
     } catch (error) {
         console.error("Error seeding the database:", error.message);
         // Log more detailed error info if available
