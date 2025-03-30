@@ -1,7 +1,13 @@
-import 'dart:async';
+ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'background_service.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SensorPage extends StatefulWidget {
   @override
@@ -9,6 +15,8 @@ class SensorPage extends StatefulWidget {
 }
 
 class _SensorPageState extends State<SensorPage> {
+  late io.Socket socket;
+
   // Gyroscope Data
   double _gyroX = 0.0;
   double _gyroY = 0.0;
@@ -22,6 +30,8 @@ class _SensorPageState extends State<SensorPage> {
   double _linearAccelY = 0.0;
   double _linearAccelZ = 0.0;
   
+  int _lastAlertTime = 0;
+
   // Alert State
   bool _highAcceleration = false;
   double _alpha = 0.8;
@@ -31,26 +41,124 @@ class _SensorPageState extends State<SensorPage> {
   StreamSubscription<GyroscopeEvent>? _gyroSub;
   StreamSubscription<AccelerometerEvent>? _accelSub;
 
-  String serverURL = "10.41.157.158:3000";
+  Future<void> _sendingSMS(String phoneNumber, String message) async {
+    final uri = Uri(
+      scheme: 'sms',
+      path: phoneNumber,
+      queryParameters: {
+        'body': message, // Add the message body
+      },
+    );
 
-  Future<String> sendAlert() async {
-    // final response = await http.get(Uri.parse("http://$serverURL/api/notifiers/warn"));
-    
-    try {
-      final response = http.post(Uri.parse("http://$serverURL/api/notifiers/warn"), body: {"phone": "0774466973"});
-      print(response); 
-    } catch (err) {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication, // Opens outside your app
+      );
+    } else {
+      throw 'Could not launch SMS';
+    }
+  }
 
-      print(err);
+  Future<bool> requestSmsPermission() async {
+    final status = await Permission.sms.request();
+    return status.isGranted;
+  }
+
+  Future<Position> _getCurrentLocation() async {
+  // Check if location services are enabled
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception('Location services are disabled');
     }
 
-    return "Success";
+    // Check and request permissions
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Location permissions are denied');
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('Location permissions are permanently denied');
+    }
+
+    // Get the current position
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+  }
+
+  String serverURL = "10.41.157.158:3000";
+
+  Future<void> sendEmailAlert() async {
+    try {
+      Position position = await _getCurrentLocation();
+      String latitude = position.latitude.toString();
+      String longitude = position.longitude.toString();
+
+      final response = await http.post(
+        Uri.parse("http://$serverURL/api/notifiers/warn"),
+        body: {
+          "phone": "+40774466973", 
+          "location": "$latitude $longitude"
+        },
+      );
+      print("Response: ${response.statusCode} - ${response.body}");
+    } catch (e) {
+      print("Error sending email alert: $e");
+    }
+  }
+
+  Future<String> sendAlert() async {
+    bool status = false;
+
+    try {
+      socket.emit('high_acceleration', {
+        'phone': '0774466973',
+        'x': _linearAccelX,
+        'y': _linearAccelY,
+        'z': _linearAccelZ,
+        'timestamp': DateTime.now().toIso8601String()
+      });
+
+      sendEmailAlert();
+      // _sendingSMS("+40737924300", "test mesaj plm");
+      status = true;
+    } catch (err) {
+      print('Socket error: $err');
+    }
+    
+    return status ? 'Alert sent successfully' : 'Failed to send alert';
   } 
 
   @override
   void initState() {
     super.initState();
+    _initSocket();
     _initSensors();
+  }
+
+  void _initSocket() {
+    socket = io.io('http://10.41.157.158:3000', <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': true,
+    });
+
+    socket.onConnect((_) {
+      print('Connected to Socket.IO server');
+    });
+
+    socket.on('alert_response', (data) {
+      print('Server response: $data');
+    });
+  }
+
+  Future<void> _startBackgroundService() async {
+    final service = FlutterBackgroundService();
+    await service.startService();
   }
 
   void _initSensors() {
@@ -87,7 +195,8 @@ class _SensorPageState extends State<SensorPage> {
         _linearAccelZ = linearZ;
         _highAcceleration = isHighAccel;
 
-        if (_highAcceleration) {
+        if (((DateTime.now().millisecondsSinceEpoch) - _lastAlertTime > 5000) && _highAcceleration) {
+          _lastAlertTime = DateTime.now().millisecondsSinceEpoch;
           sendAlert().then((value) => print(value));
         }
       });
@@ -96,6 +205,7 @@ class _SensorPageState extends State<SensorPage> {
 
   @override
   void dispose() {
+    socket.disconnect();
     _gyroSub?.cancel();
     _accelSub?.cancel();
     super.dispose();
@@ -226,4 +336,4 @@ class _SensorPageState extends State<SensorPage> {
       ),
     );
   }
-}
+} 

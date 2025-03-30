@@ -7,7 +7,8 @@ plugins {
 android {
     namespace = "com.example.mobile"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973" 
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
@@ -22,9 +23,18 @@ android {
     defaultConfig {
         applicationId = "com.example.mobile"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        // targetSdk = flutter.targetSdkVersion
+        targetSdk = 34
         versionCode = flutter.versionCode.toInt()
         versionName = flutter.versionName
+        
+        // Correct way to set manifest placeholders in Kotlin DSL
+        addManifestPlaceholders(
+            mapOf(
+                "flutterBackgroundService" to "true",
+                "enableFlutterForegroundService" to "true"
+            )
+        )
     }
 
     buildTypes {
@@ -36,7 +46,7 @@ android {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4") // Updated to 2.1.4
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {
