@@ -1,10 +1,11 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Alerts from './components/Alerts';
 import Settings from './components/Settings';
-import './App.css';
+import Landing from './components/Landing';
 
 const theme = createTheme({
   palette: {
@@ -29,20 +30,61 @@ const theme = createTheme({
   },
 });
 
-function App() {
+// Simple auth check - in a real app, this would be more sophisticated
+const isAuthenticated = () => {
+  return localStorage.getItem('isAuthenticated') === 'true';
+};
+
+const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+  return isAuthenticated() ? element : <Navigate to="/" replace />;
+};
+
+const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
-        </Layout>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute
+                element={
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/alerts"
+            element={
+              <PrivateRoute
+                element={
+                  <Layout>
+                    <Alerts />
+                  </Layout>
+                }
+              />
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute
+                element={
+                  <Layout>
+                    <Settings />
+                  </Layout>
+                }
+              />
+            }
+          />
+        </Routes>
       </Router>
     </ThemeProvider>
   );
-}
+};
 
 export default App;

@@ -214,6 +214,39 @@ const Alerts: React.FC = () => {
     }));
   };
 
+  const handleExport = () => {
+    // Convert alerts to CSV format
+    const headers = ['Status', 'Type', 'Description', 'Location', 'Time'];
+    const csvData = filteredAlerts.map(alert => [
+      alert.status,
+      alert.type,
+      alert.description,
+      alert.location,
+      alert.time
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.join(','))
+    ].join('\n');
+
+    // Create blob and download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    // Set download attributes
+    link.setAttribute('href', url);
+    link.setAttribute('download', `fallguard_alerts_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Container maxWidth="xl">
       <Box sx={{ p: 3 }}>
@@ -237,6 +270,7 @@ const Alerts: React.FC = () => {
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant="contained"
+              onClick={handleExport}
               sx={{
                 bgcolor: '#6366F1',
                 textTransform: 'none',
