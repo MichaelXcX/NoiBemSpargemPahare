@@ -1,5 +1,5 @@
-import { Mongoose } from "mongoose";
-import Elder from "./elder.model";
+const Mongoose = require("mongoose");
+const {Elder} = require("./elder.model");
 
 const mongoose = Mongoose;
 const caretakerSchema = new mongoose.Schema({
@@ -18,10 +18,11 @@ const caretakerSchema = new mongoose.Schema({
     },
     assignees: {
         type: [mongoose.Schema.Types.ObjectId],
-        ref: Elder,
+        ref: "Elder",
         required: false,
     }
 })
 
 const Caretaker = mongoose.model("Caretaker", caretakerSchema);
-export default Caretaker;
+// export default Caretaker;
+module.exports = {Caretaker};

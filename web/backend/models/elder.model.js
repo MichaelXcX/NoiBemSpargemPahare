@@ -1,6 +1,5 @@
-import { Mongoose } from "mongoose";
-import Caretaker from "./caretaker.model";
-
+const Mongoose = require("mongoose");
+const {Caretaker} = require("./caretaker.model");
 const mongoose = Mongoose;
 
 const elderSchema = new mongoose.Schema({
@@ -10,7 +9,7 @@ const elderSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true,
+        required: false,
         unique: true
     },
     phone: {
@@ -25,4 +24,4 @@ const elderSchema = new mongoose.Schema({
 })
 
 const Elder = mongoose.model("Elder", elderSchema);
-export default Elder;
+module.exports = {Elder};
