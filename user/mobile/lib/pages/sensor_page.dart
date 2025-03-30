@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:http/http.dart' as http;
 
 class SensorPage extends StatefulWidget {
   @override
@@ -29,6 +30,22 @@ class _SensorPageState extends State<SensorPage> {
   // Subscriptions
   StreamSubscription<GyroscopeEvent>? _gyroSub;
   StreamSubscription<AccelerometerEvent>? _accelSub;
+
+  String serverURL = "10.41.157.158:3000";
+
+  Future<String> sendAlert() async {
+    // final response = await http.get(Uri.parse("http://$serverURL/api/notifiers/warn"));
+    
+    try {
+      final response = http.post(Uri.parse("http://$serverURL/api/notifiers/warn"), body: {"phone": "0774466973"});
+      print(response); 
+    } catch (err) {
+
+      print(err);
+    }
+
+    return "Success";
+  } 
 
   @override
   void initState() {
@@ -69,6 +86,10 @@ class _SensorPageState extends State<SensorPage> {
         _linearAccelY = linearY;
         _linearAccelZ = linearZ;
         _highAcceleration = isHighAccel;
+
+        if (_highAcceleration) {
+          sendAlert().then((value) => print(value));
+        }
       });
     });
   }
